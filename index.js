@@ -11,7 +11,16 @@ const port = process.env.PORT || 3000;
 // CHIAVE SEGRETA (Mettila nel file .env per produzione!)
 const SECRET_KEY = process.env.JWT_SECRET;
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://casa-boschetto.com',
+    'https://www.casa-boschetto.com',
+    'http://localhost:5173' // Aggiungilo per poter testare ancora in locale
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 const pool = new Pool({
