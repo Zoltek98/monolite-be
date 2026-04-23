@@ -1,0 +1,25 @@
+# Dipendenze
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+
+# Ambiente e Segreti (IMPORTANTE)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Log e Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
