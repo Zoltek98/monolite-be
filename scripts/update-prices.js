@@ -1,33 +1,37 @@
 const axios = require('axios');
-const { Client } = require('pg'); // Cambiato driver
+const { Client } = require('pg');
 
-const API_KEY = 'FB9IDV63IHDFZ2FH'; 
+// Recuperiamo i segreti dalle variabili d'ambiente di GitHub
+const API_KEY = process.env.ALPHA_VANTAGE_KEY;
+const DATABASE_URL = process.env.DATABASE_URL;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function updateInvestments() {
     let client;
     try {
-        // Configurazione PostgreSQL
+        // Configurazione PostgreSQL ottimizzata per Neon
         client = new Client({
-            host: process.env.DB_HOST || 'db',
-            user: process.env.DB_USER || 'user',
-            password: process.env.DB_PASS || 'password',
-            database: process.env.DB_NAME || 'main',
-            port: 5432
+            connectionString: DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false // Obbligatorio per Neon/Render
+            }
         });
+        
         await client.connect();
+        console.log("--- Connessione al DB stabilita ---");
 
         const res = await client.query('SELECT * FROM assets');
         const assets = res.rows;
         const today = new Date().toISOString().split('T')[0];
         let totalPortfolioValue = 0;
+        let updatedCount = 0;
 
-        console.log(`--- Alpha Vantage Update (Postgres): ${today} ---`);
+        console.log(`--- Alpha Vantage Update: ${today} ---`);
 
         for (const asset of assets) {
             try {
-                console.log(`Recupero ${asset.ticker}...`);
+                console.log(`Recupero prezzo per: ${asset.ticker}...`);
                 
                 const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${asset.ticker}&apikey=${API_KEY}`;
                 const response = await axios.get(url);
@@ -36,8 +40,7 @@ async function updateInvestments() {
                 if (data && data["05. price"]) {
                     const price = parseFloat(data["05. price"]);
                     
-                    // SINTASSI POSTGRES: ON CONFLICT
-                    // Nota: Assicurati che asset_id e date abbiano un vincolo UNIQUE insieme
+                    // Aggiorna o Inserisce il prezzo dell'asset per oggi
                     await client.query(
                         `INSERT INTO asset_prices (asset_id, price, date) 
                          VALUES ($1, $2, $3) 
@@ -47,23 +50,25 @@ async function updateInvestments() {
                     );
 
                     totalPortfolioValue += (price * asset.shares);
-                    console.log(`✅ ${asset.ticker}: ${price.toFixed(2)}`);
+                    updatedCount++;
+                    console.log(`✅ ${asset.ticker}: ${price.toFixed(2)}€`);
                 } else if (response.data["Note"]) {
-                    console.warn("⚠️ Limite API raggiunto.");
+                    console.warn("⚠️ Limite API Alpha Vantage raggiunto (5 chiamate/min).");
                     break; 
                 } else {
-                    console.error(`❌ Ticker non trovato: ${asset.ticker}`);
+                    console.error(`❌ Ticker non trovato o errore API: ${asset.ticker}`);
                 }
 
+                // Sleep di 15 secondi per rispettare il piano free di Alpha Vantage
                 await sleep(15000); 
 
             } catch (e) {
-                console.error(`❌ Errore per ${asset.ticker}: ${e.message}`);
+                console.error(`❌ Errore durante l'aggiornamento di ${asset.ticker}: ${e.message}`);
             }
         }
 
         if (totalPortfolioValue > 0) {
-            // SINTASSI POSTGRES: ON CONFLICT
+            // Salva lo storico del valore totale del portafoglio
             await client.query(
                 `INSERT INTO portfolio_history (total_value, date) 
                  VALUES ($1, $2) 
@@ -71,13 +76,24 @@ async function updateInvestments() {
                  DO UPDATE SET total_value = EXCLUDED.total_value`,
                 [totalPortfolioValue, today]
             );
-            console.log(`📊 Valore Totale: ${totalPortfolioValue.toFixed(2)}`);
+
+            // INSERIMENTO NOTIFICA NELLA WEBAPP
+            const logMsg = `Aggiornamento completato per ${updatedCount} asset. Valore totale portafoglio: ${totalPortfolioValue.toFixed(2)}€`;
+            await client.query(
+                'INSERT INTO notifications (category, message) VALUES ($1, $2)',
+                ['INVESTIMENTI', logMsg]
+            );
+
+            console.log(`📊 Valore Totale Portafoglio: ${totalPortfolioValue.toFixed(2)}€`);
         }
 
     } catch (err) {
-        console.error('Errore Generale:', err);
+        console.error('❌ Errore Generale dello script:', err);
     } finally {
-        if (client) await client.end();
+        if (client) {
+            await client.end();
+            console.log("--- Connessione chiusa ---");
+        }
         process.exit();
     }
 }
