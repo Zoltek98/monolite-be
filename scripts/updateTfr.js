@@ -33,7 +33,8 @@ async function updateTfr() {
         // 3. Scraping della Data di aggiornamento
         // Spesso è in uno span vicino o identificato da t-text -black-warm-60
         // Nota: Il selettore potrebbe variare leggermente in base alla struttura esatta
-        const dateRaw = $('span.t-text.-black-warm-60:contains("/")').first().text().trim(); 
+        const dateContainer = $('span.t-text:contains("Data:")');
+        const dateRaw = dateContainer.find('strong').text().trim();
         
         // Convertiamo la data da DD/MM/YYYY a YYYY-MM-DD per Postgres
         const [day, month, year] = dateRaw.split('/');
