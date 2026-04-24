@@ -1,0 +1,20 @@
+name: Update TFR Data
+on:
+  schedule:
+    - cron: '0 18 * * 1-5' # Gira ogni lun-ven alle 18:00
+  workflow_dispatch: # Permette avvio manuale
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - run: npm install axios cheerio pg
+      - name: Run Script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node updateTfr.js
