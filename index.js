@@ -160,6 +160,32 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
     }
 });
 
+// Recupera le ultime 10 notifiche
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM notifications ORDER BY created_at DESC LIMIT 10'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Creazione notifica (usata dagli script)
+app.post('/api/notifications', authenticateToken, async (req, res) => {
+  const { category, message } = req.body;
+  try {
+    await pool.query(
+      'INSERT INTO notifications (category, message) VALUES ($1, $2)',
+      [category, message]
+    );
+    res.status(201).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- ROTTE DI SERVIZIO (Libere o Protette a scelta) ---
 
 app.post('/api/luce/auto', async (req, res) => {

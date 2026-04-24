@@ -1,0 +1,32 @@
+name: Casa Boschetto Automation
+
+on:
+  schedule:
+    # Gira ogni giorno alle 08:30 UTC (9:30 italiane)
+    - cron: '30 8 * * *'
+  # Permette di far partire lo script a mano premendo un tasto su GitHub
+  workflow_dispatch:
+
+jobs:
+  run-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del codice
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Installazione dipendenze
+        run: npm install axios imapflow
+
+      - name: Esecuzione Script Email
+        run: node scripts/tuo_script_email.js
+        env:
+          # Queste sono le variabili segrete che impostiamo su GitHub
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL: ${{ secrets.EMAIL }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
+          VITE_API_URL: https://api.casa-boschetto.com
