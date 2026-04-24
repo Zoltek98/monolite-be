@@ -38,6 +38,7 @@ async function updateTfr() {
         // Convertiamo la data da DD/MM/YYYY a YYYY-MM-DD per Postgres
         const [day, month, year] = dateRaw.split('/');
         const formattedDate = `${year}-${month}-${day}`;
+        console.log("->",price, dateRaw);
 
         if (!isNaN(price) && dateRaw) {
             console.log(`Dati trovati: Prezzo ${price} | Data ${formattedDate}`);
