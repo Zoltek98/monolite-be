@@ -5,6 +5,9 @@ const client = new ImapFlow({
     host: 'imap.gmail.com',
     port: 993,
     secure: true,
+    authMethod: 'LOGIN',
+    connectionTimeout: 10000, // 10 secondi
+    greetingTimeout: 10000,
     auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASS
