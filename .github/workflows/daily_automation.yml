@@ -3,7 +3,7 @@ name: Casa Boschetto Automation
 on:
   schedule:
     # Gira ogni giorno alle 08:30 UTC (9:30 italiane)
-    - cron: '30 8 * * *'
+    - cron: '0 7 * * *'
   # Permette di far partire lo script a mano premendo un tasto su GitHub
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ jobs:
         run: npm install axios imapflow
 
       - name: Esecuzione Script Email
-        run: node scripts/tuo_script_email.js
+        run: node scripts/mail-checker.js
         env:
           # Queste sono le variabili segrete che impostiamo su GitHub
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
