@@ -17,4 +17,4 @@ jobs:
       - name: Run Script
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: node updateTfr.js
+        run: node scripts/updateTfr.js
