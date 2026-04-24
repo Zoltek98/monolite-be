@@ -15,7 +15,7 @@ async function updateTfr() {
         await client.connect();
         console.log("--- Connessione DB stabilita ---");
 
-        // 1. Fetch della pagina con User-Agent per evitare blocchi
+        // 1. Fetch della pagina con User-Agent
         const { data } = await axios.get(URL_BORSA, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -25,24 +25,30 @@ async function updateTfr() {
         const $ = cheerio.load(data);
 
         // 2. Scraping del Prezzo
-        // Cerchiamo il testo strong dentro le classi indicate
         const priceRaw = $('span.t-text.-black-warm-60.-formatPrice strong').first().text();
-        // Pulizia del prezzo: togliamo spazi e sostituiamo la virgola con il punto
         const price = parseFloat(priceRaw.replace(',', '.').trim());
 
-        // 3. Scraping della Data di aggiornamento
-        // Spesso è in uno span vicino o identificato da t-text -black-warm-60
-        // Nota: Il selettore potrebbe variare leggermente in base alla struttura esatta
+        // 3. Scraping della Data di aggiornamento (evitando lo span EUR)
         const dateContainer = $('span.t-text:contains("Data:")');
-        const dateRaw = dateContainer.find('strong').text().trim();
+        const dateRaw = dateContainer.find('strong').text().trim(); // Esempio: "15/04/26"
         
-        // Convertiamo la data da DD/MM/YYYY a YYYY-MM-DD per Postgres
-        const [day, month, year] = dateRaw.split('/');
-        const formattedDate = `${year}-${month}-${day}`;
-        console.log("->",price, dateRaw);
-
         if (!isNaN(price) && dateRaw) {
-            console.log(`Dati trovati: Prezzo ${price} | Data ${formattedDate}`);
+            // Scomposizione data
+            const dateParts = dateRaw.split('/');
+            if (dateParts.length !== 3) throw new Error("Formato data non valido");
+
+            let [day, month, year] = dateParts;
+
+            // Trasformiamo l'anno "26" in "2026"
+            if (year.length === 2) {
+                year = `20${year}`;
+            }
+
+            // Formattazione ISO YYYY-MM-DD (es. 2026-04-15)
+            // padStart aggiunge lo '0' se mancano cifre (es. mese '4' diventa '04')
+            const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+            console.log(`Dati trovati: Prezzo ${price} | Data Originale ${dateRaw} | Data Formattata ${formattedDate}`);
 
             // 4. Inserimento con controllo duplicati sulla data
             const result = await client.query(
@@ -57,20 +63,21 @@ async function updateTfr() {
             if (result.rowCount > 0) {
                 console.log("✅ Dati TFR aggiornati con successo.");
                 
-                // Inserimento notifica (opzionale)
                 await client.query(
                     'INSERT INTO notifications (category, message) VALUES ($1, $2)',
-                    ['TFR', `Nuovo valore TFR: ${price}€ del ${dateRaw}`]
+                    ['TFR', `Nuovo valore TFR: ${price}€ (Data: ${dateRaw})`]
                 );
             }
         } else {
-            throw new Error("Impossibile recuperare prezzo o data dalla pagina.");
+            throw new Error(`Impossibile recuperare i dati. Prezzo: ${priceRaw}, Data: ${dateRaw}`);
         }
 
     } catch (err) {
+        // Stampiamo l'errore per il debug
         console.error('❌ Errore script TFR:', err.message);
     } finally {
         if (client) await client.end();
+        console.log("--- Connessione chiusa ---");
         process.exit();
     }
 }
