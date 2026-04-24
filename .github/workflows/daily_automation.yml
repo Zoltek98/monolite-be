@@ -24,6 +24,7 @@ jobs:
       - name: 📧 Controllo Bollette (Email)
         run: node scripts/mail-checker.js
         env:
+          EMAIL: ${{ secrets.EMAIL }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           # Usiamo direttamente la stringa di Neon per comodità
           DATABASE_URL: ${{ secrets.DATABASE_URL }} 
