@@ -5,13 +5,14 @@ const client = new ImapFlow({
     host: 'imap.gmail.com',
     port: 993,
     secure: true,
-    authMethod: 'LOGIN',
-    connectionTimeout: 10000, // 10 secondi
-    greetingTimeout: 10000,
+    logger: false, // Disabilita i log pesanti se non ti servono
     auth: {
         user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS
-    }
+        pass: process.env.EMAIL_PASS.trim() // .trim() rimuove eventuali spazi bianchi invisibili
+    },
+    // Forza il client a non usare SASL PLAIN se Gmail fa i capricci
+    capabilities: ['IMAP4rev1', 'AUTH=LOGIN'], 
+    authMethod: 'LOGIN'
 });
 
 const autoInsert = async () => {
