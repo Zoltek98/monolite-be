@@ -1,0 +1,22 @@
+name: 🏠 Home Climate Monitoring
+
+on:
+  schedule:
+    # Gira ogni ora al minuto 0
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - run: npm install @tuya/tuya-connector-nodejs pg
+      - run: node scripts/home.js
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_SECRET: ${{ secrets.TUYA_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
