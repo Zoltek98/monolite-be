@@ -59,7 +59,7 @@ const autoInsert = async () => {
                         year: targetYear, 
                         month: targetMonth, 
                         price: price, 
-                        [unit === 'kwh' ? 'kwh' : 'mc']: value, 
+                        [unit === 'kwh' ? 'kWh' : 'mc']: value, 
                         month_ref: `${periodMatch[1]}/${periodMatch[2]}` 
                     };
 
