@@ -78,7 +78,7 @@ app.get('/api/mutuo', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/luce', authenticateToken, async (req, res) => {
-    const query = 'SELECT id, month_ref, month, year, price, kWh FROM luce ORDER BY id ASC';
+    const query = 'SELECT id, month_ref, month, year, price, kwh FROM luce ORDER BY id ASC';
     try {
         const result = await pool.query(query);
         res.json(result.rows);
@@ -140,7 +140,7 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
     try {
         const queries = {
             mortgage: 'SELECT price FROM mutuo ORDER BY id DESC LIMIT 1',
-            lastLuce: 'SELECT price, month, year, kWh FROM luce ORDER BY year DESC, month DESC LIMIT 1',
+            lastLuce: 'SELECT price, month, year, kwh FROM luce ORDER BY year DESC, month DESC LIMIT 1',
             lastGas: 'SELECT price, mc, month, year FROM gas ORDER BY year DESC, month DESC LIMIT 1',
             portfolio: 'SELECT total_value FROM portfolio_history ORDER BY date DESC LIMIT 1'
         };
@@ -191,11 +191,11 @@ app.post('/api/notifications', authenticateToken, async (req, res) => {
 app.post('/api/luce/auto', async (req, res) => {
     // Nota: Se questo viene chiamato dal tuo script cron, 
     // potresti voler gestire un'API KEY o lasciare libera se l'IP è locale
-    const { year, month, price, month_ref, kWh } = req.body;
+    const { year, month, price, month_ref, kwh } = req.body;
     try {
         const check = await pool.query('SELECT id FROM luce WHERE year = $1 AND month = $2', [year, month]);
         if (check.rows.length > 0) return res.status(409).json({ message: 'Esiste già' });
-        await pool.query('INSERT INTO luce (year, month, price, month_ref, kWh) VALUES ($1, $2, $3, $4, $5)', [year, month, price, month_ref, kWh]);
+        await pool.query('INSERT INTO luce (year, month, price, month_ref, kwh) VALUES ($1, $2, $3, $4, $5)', [year, month, price, month_ref, kwh]);
         res.json({ status: 'Success' });
     } catch (err) {
         res.status(500).send(err.message);
