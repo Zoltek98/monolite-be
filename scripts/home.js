@@ -28,44 +28,46 @@ async function updateHomeClimate() {
 
     // Usa un ciclo for...of standard (non forEach) per gestire correttamente l'asincronia
     for (const sensor of SENSORS) {
-      console.log(`Richiesta dati per: ${sensor.name}...`);
-      
-      const response = await tuya.request({
+    console.log(`--- Elaborazione: ${sensor.name} (ID: ${sensor.id}) ---`);
+    
+    const response = await tuya.request({
         method: 'GET',
         path: `/v1.0/devices/${sensor.id}/status`,
-      });
+    });
 
-      if (response.success) {
+    if (response.success) {
         const getVal = (code) => response.result.find(item => item.code === code)?.value;
-
         const temp = getVal('va_temperature') ? getVal('va_temperature') / 10 : null;
         const hum = getVal('va_humidity') || null;
-        const battery = getVal('battery_state') || null;
 
         if (temp !== null) {
-          // 1. Assicurati che il dispositivo esista (Check anagrafica)
-          await client.query(
-            `INSERT INTO home_devices (id, name) 
-             VALUES ($1, $2) 
-             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-            [sensor.id, sensor.name]
-          );
+            try {
+                // 1. FORZIAMO l'inserimento nell'anagrafica prima della lettura
+                // Questo "sana" il database se il sensore non esiste o ha l'ID nuovo
+                await client.query(
+                    `INSERT INTO home_devices (id, name) 
+                     VALUES ($1, $2) 
+                     ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
+                    [sensor.id, sensor.name]
+                );
 
-          // 2. Inserimento lettura
-          await client.query(
-            `INSERT INTO device_readings (device_id, temperature, humidity, battery_state) 
-             VALUES ($1, $2, $3, $4)`,
-            [sensor.id, temp, hum, battery]
-          );
-          
-          console.log(`✅ Inserito ${sensor.name}: ${temp}°C`);
-        } else {
-          console.log(`⚠️ ${sensor.name}: Dati incompleti, salto inserimento.`);
+                // 2. Inseriamo la lettura
+                await client.query(
+                    `INSERT INTO device_readings (device_id, temperature, humidity) 
+                     VALUES ($1, $2, $3)`,
+                    [sensor.id, temp, hum]
+                );
+                
+                console.log(`✅ ${sensor.name} salvato correttamente.`);
+            } catch (dbErr) {
+                console.error(`❌ Errore DB per ${sensor.name} [ID: ${sensor.id}]:`, dbErr.message);
+                // Se fallisce qui, il log ci dirà esattamente quale ID rompe il vincolo
+            }
         }
-      } else {
-        console.error(`❌ Errore Tuya su ${sensor.name}: ${response.msg}`);
-      }
+    } else {
+        console.error(`❌ Tuya non risponde per ${sensor.name}: ${response.msg}`);
     }
+}
     
     console.log("--- Tutte le operazioni completate con successo ---");
 
