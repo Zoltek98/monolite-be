@@ -24,39 +24,58 @@ async function updateHomeClimate() {
 
   try {
     await client.connect();
-    console.log("--- Inizio Lettura Sensori ---");
+    console.log("--- Connessione DB OK ---");
 
+    // Usa un ciclo for...of standard (non forEach) per gestire correttamente l'asincronia
     for (const sensor of SENSORS) {
+      console.log(`Richiesta dati per: ${sensor.name}...`);
+      
       const response = await tuya.request({
         method: 'GET',
         path: `/v1.0/devices/${sensor.id}/status`,
       });
 
       if (response.success) {
-        // Estraiamo i valori dall'array "code/value"
         const getVal = (code) => response.result.find(item => item.code === code)?.value;
 
-        // Trasformazione dati (204 -> 20.4)
         const temp = getVal('va_temperature') ? getVal('va_temperature') / 10 : null;
         const hum = getVal('va_humidity') || null;
         const battery = getVal('battery_state') || null;
 
         if (temp !== null) {
+          // 1. Assicurati che il dispositivo esista (Check anagrafica)
+          await client.query(
+            `INSERT INTO home_devices (id, name) 
+             VALUES ($1, $2) 
+             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
+            [sensor.id, sensor.name]
+          );
+
+          // 2. Inserimento lettura
           await client.query(
             `INSERT INTO device_readings (device_id, temperature, humidity, battery_state) 
              VALUES ($1, $2, $3, $4)`,
             [sensor.id, temp, hum, battery]
           );
-          console.log(`✅ ${sensor.name}: ${temp}°C, ${hum}%`);
+          
+          console.log(`✅ Inserito ${sensor.name}: ${temp}°C`);
+        } else {
+          console.log(`⚠️ ${sensor.name}: Dati incompleti, salto inserimento.`);
         }
       } else {
-        console.error(`❌ Errore sensore ${sensor.name}:`, response.msg);
+        console.error(`❌ Errore Tuya su ${sensor.name}: ${response.msg}`);
       }
     }
+    
+    console.log("--- Tutte le operazioni completate con successo ---");
+
   } catch (err) {
-    console.error('❌ Errore generale:', err.message);
+    // Questo catturerà qualsiasi errore di Foreign Key o di connessione
+    console.error('❌ ERRORE CRITICO:', err.message);
+    if (err.detail) console.error('Dettaglio errore:', err.detail);
   } finally {
     await client.end();
+    console.log("--- Connessione DB Chiusa ---");
     process.exit();
   }
 }
