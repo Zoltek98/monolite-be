@@ -1,0 +1,28 @@
+name: 📈 Weekday Investment Update
+
+on:
+  schedule:
+    # Gira alle 07:00 UTC, dal Lunedì (1) al Venerdì (5)
+    - cron: '0 7 * * 1-5'
+  workflow_dispatch: 
+
+jobs:
+  update-investments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install axios pg
+
+      - name: 📈 Aggiornamento Investimenti
+        run: node scripts/update-prices.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
