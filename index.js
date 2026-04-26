@@ -160,10 +160,8 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
     }
 });
 
-// Endpoint per ottenere l'ultimo stato di tutti i sensori
 app.get('/api/home-status', async (req, res) => {
   try {
-    // Questa query prende l'ultima lettura per ogni dispositivo registrato
     const query = `
       SELECT DISTINCT ON (device_id) 
              device_id, temperature, humidity, recorded_at, h.name
@@ -171,9 +169,11 @@ app.get('/api/home-status', async (req, res) => {
       JOIN home_devices h ON d.device_id = h.id
       ORDER BY device_id, recorded_at DESC;
     `;
-    const result = await db.query(query);
+    // CAMBIA db.query in pool.query (o come si chiama il tuo oggetto pg)
+    const result = await pool.query(query); 
     res.json(result.rows);
   } catch (err) {
+    console.error("Errore API home-status:", err);
     res.status(500).json({ error: err.message });
   }
 });
