@@ -160,7 +160,7 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
     }
 });
 
-app.get('/api/home-status', async (req, res) => {
+app.get('/api/home-status',authenticateToken, async (req, res) => {
   try {
     const query = `
       SELECT DISTINCT ON (device_id) 
