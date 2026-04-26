@@ -10,10 +10,10 @@ const tuya = new TuyaContext({
 
 // Lista dei tuoi dispositivi (ID recuperati dal portale Tuya)
 const SENSORS = [
-  { id: 'bf974c5fe6e68d0d98ytou', name: 'Piano terra' },
-   { id: 'bfabd364054e01dff7load', name: 'Corte' },
-  { id: 'bf6dcdbe553ca9f9c0pune', name: 'Primo piano' },
-  { id: 'bf253785d5959cca8btlmd', name: 'Bagno' }
+  { id: 'bf974c5fe6e68d0d98ytou', name: 'terra' },
+   { id: 'bfabd364054e01dff7load', name: 'corte' },
+  { id: 'bf6dcdbe553ca9f9c0pune', name: 'primo' },
+  { id: 'bf253785d5959cca8btlmd', name: 'bagno' }
 ];
 
 async function updateHomeClimate() {
