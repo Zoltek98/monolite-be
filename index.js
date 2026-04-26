@@ -160,6 +160,24 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
     }
 });
 
+// Endpoint per ottenere l'ultimo stato di tutti i sensori
+app.get('/api/home-status', async (req, res) => {
+  try {
+    // Questa query prende l'ultima lettura per ogni dispositivo registrato
+    const query = `
+      SELECT DISTINCT ON (device_id) 
+             device_id, temperature, humidity, recorded_at, h.name
+      FROM device_readings d
+      JOIN home_devices h ON d.device_id = h.id
+      ORDER BY device_id, recorded_at DESC;
+    `;
+    const result = await db.query(query);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Recupera le ultime 10 notifiche
 app.get('/api/notifications', authenticateToken, async (req, res) => {
   try {
