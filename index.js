@@ -142,7 +142,8 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
             mortgage: 'SELECT price FROM mutuo ORDER BY id DESC LIMIT 1',
             lastLuce: 'SELECT price, month, year, kwh FROM luce ORDER BY year DESC, month DESC LIMIT 1',
             lastGas: 'SELECT price, mc, month, year FROM gas ORDER BY year DESC, month DESC LIMIT 1',
-            portfolio: 'SELECT total_value FROM portfolio_history ORDER BY date DESC LIMIT 1'
+            portfolio: 'SELECT total_value FROM portfolio_history ORDER BY date DESC LIMIT 1',
+            temperatures: 'SELECT DISTINCT ON (device_id) device_id, temperature, humidity, recorded_at, h.name FROM device_readings d JOIN home_devices h ON d.device_id = h.id ORDER BY device_id, recorded_at DESC;'
         };
         const mortgage = await pool.query(queries.mortgage);
         const luce = await pool.query(queries.lastLuce);
@@ -169,7 +170,6 @@ app.get('/api/home-status',authenticateToken, async (req, res) => {
       JOIN home_devices h ON d.device_id = h.id
       ORDER BY device_id, recorded_at DESC;
     `;
-    // CAMBIA db.query in pool.query (o come si chiama il tuo oggetto pg)
     const result = await pool.query(query); 
     res.json(result.rows);
   } catch (err) {
