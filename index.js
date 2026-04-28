@@ -149,12 +149,14 @@ app.get('/api/dashboard/summary', authenticateToken, async (req, res) => {
         const luce = await pool.query(queries.lastLuce);
         const gas = await pool.query(queries.lastGas);
         const portfolio = await pool.query(queries.portfolio);
+        const temperatures = await pool.query(queries.temperatures);
 
         res.json({
             mortgage: mortgage.rows[0]?.price || 0,
             luce: luce.rows[0] || null,
             gas: gas.rows[0] || null,
-            portfolio: portfolio.rows[0]?.total_value || 0
+            portfolio: portfolio.rows[0]?.total_value || 0,
+            temperatures: temperatures.rows || null
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
