@@ -13,4 +13,4 @@ jobs:
           LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
           LASTFM_USER: ${{ secrets.LASTFM_USER }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python music.py
+        run: python scripts/music.py
