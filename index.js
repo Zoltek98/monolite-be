@@ -234,6 +234,49 @@ app.post('/api/gas/auto', async (req, res) => {
     }
 });
 
+// 1. Lista di tutti i report (per lo storico generale)
+app.get('/api/music/reports', authenticateToken, async (req, res) => {
+    const query = "SELECT id, TO_CHAR(report_date, 'YYYY-MM-DD') as date, total_minutes, total_scrobbles FROM music_reports ORDER BY report_date DESC";
+    try {
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Dettaglio dell'ultimo mese (aggregato dai report settimanali)
+app.get('/api/music/monthly-summary', authenticateToken, async (req, res) => {
+    const query = `
+        SELECT month, year, SUM(total_minutes) as monthly_minutes, SUM(total_scrobbles) as monthly_scrobbles 
+        FROM music_reports 
+        WHERE report_date >= CURRENT_DATE - INTERVAL '1 month'
+        GROUP BY month, year`;
+    try {
+        const result = await pool.query(query);
+        res.json(result.rows[0] || { monthly_minutes: 0, monthly_scrobbles: 0 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Dettaglio singolo report (con i top artist/track)
+app.get('/api/music/report/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const query = `
+        SELECT r.*, d.item_type, d.item_name, d.play_count 
+        FROM music_reports r
+        LEFT JOIN music_report_details d ON r.id = d.report_id
+        WHERE r.id = $1
+        ORDER BY d.play_count DESC`;
+    try {
+        const result = await pool.query(query, [id]);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
 
 app.listen(port, () => {

@@ -1,0 +1,16 @@
+name: Update Music Stats
+on:
+  schedule:
+    - cron: '0 0 * * 1' # Ogni lunedì a mezzanotte
+  workflow_dispatch: # Permette l'esecuzione manuale
+jobs:
+  update_db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Script
+        env:
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_USER: ${{ secrets.LASTFM_USER }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python music.py
