@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function getUsdToEurRate() {
     const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${API_KEY}`;
     const response = await axios.get(url);
-    const fx = response.data["Realtime Currency Exchange Rate"];
+    const fx = response["Realtime Currency Exchange Rate"];
 
     if (!fx || !fx["5. Exchange Rate"]) {
         throw new Error("Impossibile recuperare il cambio USD/EUR");
