@@ -8,15 +8,28 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function getUsdToEurRate() {
     const url = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency=EUR&apikey=${API_KEY}`;
-    const response = await axios.get(url);
-    const fx = response.data["Realtime Currency Exchange Rate"];
-    console.log(`Ricevuto cambio dollaro: ${fx}`);
+    const { data } = await axios.get(url);
 
-    if (!fx || !fx["5. Exchange Rate"]) {
-        throw new Error("Impossibile recuperare il cambio USD/EUR");
+    if (data["Note"]) {
+        throw new Error(`Alpha Vantage rate limit: ${data["Note"]}`);
     }
 
-    return parseFloat(fx["5. Exchange Rate"]);
+    if (data["Information"]) {
+        throw new Error(`Alpha Vantage info: ${data["Information"]}`);
+    }
+
+    if (data["Error Message"]) {
+        throw new Error(`Alpha Vantage error: ${data["Error Message"]}`);
+    }
+
+    const fx = data["Realtime Currency Exchange Rate"];
+    const rate = fx && fx["5. Exchange Rate"];
+
+    if (!rate) {
+        throw new Error(`Risposta FX non valida: ${JSON.stringify(data)}`);
+    }
+
+    return parseFloat(rate);
 }
 
 async function updateInvestments() {
