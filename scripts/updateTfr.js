@@ -56,9 +56,30 @@ async function updateTfr() {
             if (result.rowCount > 0) {
                 console.log("✅ Dati TFR nuovi o variati. Database aggiornato.");
                 
+                // Recupera la quota più recente da tfr_quotas
+                const quotaQuery = `
+                    SELECT number FROM tfr_quotas 
+                    ORDER BY date DESC 
+                    LIMIT 1;
+                `;
+                const quotaResult = await client.query(quotaQuery);
+                
+                let notificationMessage = `Nuovo valore TFR: ${price}€ (Data: ${dateRaw})`;
+                
+                if (quotaResult.rowCount > 0) {
+                    const currentQuotas = parseFloat(quotaResult.rows[0].number);
+                    const totalValue = currentQuotas * price;
+                    
+                    // Arricchisce il messaggio con il numero di quote e il controvalore totale
+                    notificationMessage += ` | Quote attuali: ${currentQuotas.toFixed(4)} | Valore totale: ${totalValue.toFixed(2)}€`;
+                    console.log(`Calcolato valore totale: ${totalValue.toFixed(2)}€ basato su ${currentQuotas} quote.`);
+                } else {
+                    console.log("ℹ️ Nessuna quota trovata in tfr_quotas. Invio notifica standard.");
+                }
+                
                 await client.query(
                     'INSERT INTO notifications (category, message) VALUES ($1, $2)',
-                    ['TFR', `Nuovo valore TFR: ${price}€ (Data: ${dateRaw})`]
+                    ['TFR', notificationMessage]
                 );
             } else {
                 console.log("ℹ️ Nessuna variazione rilevata (stesso prezzo per la stessa data). Skip notifiche.");
