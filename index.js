@@ -285,8 +285,8 @@ app.get('/api/tfr', authenticateToken, async(req,res)=>{
             a: 'SELECT * FROM tfr_history ORDER BY data_osservazione DESC',
             b: 'SELECT * FROM tfr_quotas ORDER BY date DESC LIMIT 1',
             };
-        const a = await pool.query(queries.mortgage);
-        const b = await pool.query(queries.lastLuce);
+        const a = await pool.query(queries.a);
+        const b = await pool.query(queries.b);
         res.json({
             tfr_history: a.rows || null,
             tfr_quotas: b.rows[0] || null,
