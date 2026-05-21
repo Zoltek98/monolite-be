@@ -277,6 +277,27 @@ app.get('/api/music/report/:id', authenticateToken, async (req, res) => {
     }
 });
 
+//TFR
+
+app.get('/api/tfr', authenticateToken, async(req,res)=>{
+    try {
+        const queries = {
+            a: 'SELECT * FROM tfr_history ORDER BY data_osservazione DESC',
+            b: 'SELECT * FROM tfr_quotas ORDER BY date DESC LIMIT 1',
+            };
+        const a = await pool.query(queries.mortgage);
+        const b = await pool.query(queries.lastLuce);
+        res.json({
+            tfr_history: a.rows || null,
+            tfr_quotas: b.rows[0] || null,
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get
+
 app.get('/health', (req, res) => res.json({ status: 'OK' }));
 
 app.listen(port, () => {
